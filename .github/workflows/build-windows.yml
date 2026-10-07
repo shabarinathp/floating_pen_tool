@@ -1,0 +1,48 @@
+name: Build Shabarinath Floating Pen Tool V5.2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows-build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore src/ShabarinathFloatingPenTool/ShabarinathFloatingPenTool.csproj
+
+      - name: Publish self-contained Windows EXE
+        shell: pwsh
+        run: |
+          dotnet publish src/ShabarinathFloatingPenTool/ShabarinathFloatingPenTool.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o publish
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\ShabarinathFloatingPenTool.iss"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shabarinath-Floating-Pen-Tool-V5-2
+          path: installer_output/Shabarinath_Floating_Pen_Tool_V5_2_Setup.exe
+          compression-level: 9
+          if-no-files-found: error
